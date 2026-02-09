@@ -16,6 +16,7 @@ interface SessionPickerProps {
 export function SessionPicker({ onClose }: SessionPickerProps) {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { startClaude, cleanup } = useClaudeProcess();
 
   useEffect(() => {
@@ -23,7 +24,9 @@ export function SessionPicker({ onClose }: SessionPickerProps) {
       try {
         const result = await invoke<SessionInfo[]>("list_sessions");
         setSessions(result);
-      } catch {
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        setError(message);
         setSessions([]);
       }
       setLoading(false);
@@ -44,7 +47,7 @@ export function SessionPicker({ onClose }: SessionPickerProps) {
   );
 
   const formatTime = (timestamp: number) => {
-    if (!timestamp) return "Unknown";
+    if (timestamp === 0 || timestamp == null) return "Unknown";
     const date = new Date(timestamp * 1000);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -75,6 +78,8 @@ export function SessionPicker({ onClose }: SessionPickerProps) {
         <div className="flex-1 overflow-y-auto p-2">
           {loading ? (
             <div className="text-center py-8 text-zinc-500 text-sm">Loading sessions...</div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-400 text-sm">Failed to load sessions: {error}</div>
           ) : sessions.length === 0 ? (
             <div className="text-center py-8 text-zinc-500 text-sm">No sessions found</div>
           ) : (
