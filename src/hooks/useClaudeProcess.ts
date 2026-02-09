@@ -10,7 +10,7 @@ import { homeDir } from "@tauri-apps/api/path";
 import { log } from "../lib/logger";
 
 export function useClaudeProcess() {
-  const { spawnProcess, cleanup } = usePty();
+  const { spawnProcess, cleanup, write } = usePty();
   const setStatus = useTerminalStore((s) => s.setStatus);
   const setClaudePath = useTerminalStore((s) => s.setClaudePath);
   const setExitCode = useTerminalStore((s) => s.setExitCode);
@@ -108,10 +108,15 @@ export function useClaudeProcess() {
     setStatus("exited");
   }, [cleanup, setStatus]);
 
+  const sendInput = useCallback((text: string) => {
+    write(text);
+  }, [write]);
+
   return {
     startClaude,
     startShell,
     stopClaude,
     cleanup,
+    sendInput,
   };
 }

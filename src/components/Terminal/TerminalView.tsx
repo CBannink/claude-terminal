@@ -5,6 +5,7 @@ import { useWindowResize } from "../../hooks/useWindowResize";
 import { useTerminalStore } from "../../stores/terminalStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { themes } from "../../lib/themes";
+import { InputEditor } from "../Editor";
 import "@xterm/xterm/css/xterm.css";
 
 export function TerminalView() {
@@ -12,6 +13,7 @@ export function TerminalView() {
   const { startClaude } = useClaudeProcess();
   const status = useTerminalStore((s) => s.status);
   const error = useTerminalStore((s) => s.error);
+  const editorOpen = useTerminalStore((s) => s.editorOpen);
   const settings = useSettingsStore((s) => s.settings);
   const initializedRef = useRef(false);
 
@@ -20,10 +22,15 @@ export function TerminalView() {
     if (!containerRef.current || initializedRef.current) return;
     initializedRef.current = true;
 
+    let cancelled = false;
     const term = terminalManager.init(containerRef.current, settings);
 
     // Wait for terminal to have correct dimensions before spawning PTY
-    terminalManager.whenReady().then(() => startClaude(term)).catch((err) => {
+    terminalManager.whenReady().then(() => {
+      if (cancelled) return;
+      return startClaude(term);
+    }).catch((err) => {
+      if (cancelled) return;
       const message = err instanceof Error ? err.message : String(err);
       term.writeln("");
       if (message.toLowerCase().includes("not found")) {
@@ -40,6 +47,7 @@ export function TerminalView() {
     });
 
     return () => {
+      cancelled = true;
       terminalManager.dispose();
       initializedRef.current = false;
     };
@@ -60,22 +68,25 @@ export function TerminalView() {
   const bg = (themes[settings.theme] || themes.dark).background;
 
   return (
-    <div className="flex-1 relative overflow-hidden">
-      <div
-        ref={containerRef}
-        className="absolute inset-0"
-        style={{ padding: "4px", backgroundColor: bg }}
-      />
-      {status === "exited" && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-zinc-800/90 text-zinc-300 px-4 py-2 rounded-lg text-sm backdrop-blur border border-zinc-700">
-          Process exited. Use the toolbar to start a new session.
-        </div>
-      )}
-      {status === "error" && error && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-red-900/90 text-red-200 px-4 py-2 rounded-lg text-sm backdrop-blur border border-red-800 max-w-lg text-center">
-          {error}
-        </div>
-      )}
+    <div className="h-full flex flex-col overflow-hidden">
+      {editorOpen && <InputEditor />}
+      <div className="flex-1 relative overflow-hidden">
+        <div
+          ref={containerRef}
+          className="absolute inset-0"
+          style={{ padding: "4px", backgroundColor: bg }}
+        />
+        {status === "exited" && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-zinc-800/90 text-zinc-300 px-4 py-2 rounded-lg text-sm backdrop-blur border border-zinc-700">
+            Process exited. Use the toolbar to start a new session.
+          </div>
+        )}
+        {status === "error" && error && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-red-900/90 text-red-200 px-4 py-2 rounded-lg text-sm backdrop-blur border border-red-800 max-w-lg text-center">
+            {error}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { spawn } from "tauri-pty";
 import type { Terminal } from "@xterm/xterm";
 import { CLAUDE_ENV } from "../lib/constants";
 import { log } from "../lib/logger";
+import { useTerminalStore } from "../stores/terminalStore";
 
 interface PtyInstance {
   write: (data: string) => void;
@@ -74,8 +75,15 @@ export function usePty() {
       disposablesRef.current.push(dataDisposable);
 
       // Terminal → PTY
+      // Note: inputMode is checked synchronously on every keystroke.
+      // Switching modes while typing is safe because Zustand updates are synchronous,
+      // but UI should only allow mode switching when terminal is idle for best UX.
       const inputDisposable = term.onData((data: string) => {
-        pty.write(data);
+        const { inputMode } = useTerminalStore.getState();
+        if (inputMode === "terminal") {
+          pty.write(data);
+        }
+        // In editor mode: terminal input is suppressed
       });
       disposablesRef.current.push(inputDisposable);
 

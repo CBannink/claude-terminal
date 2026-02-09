@@ -68,7 +68,17 @@ class TerminalManager {
       requestAnimationFrame(() => {
         fitAddon.fit();
         log("info", `TerminalManager.init: fitted to ${term.cols}x${term.rows}`);
-        resolve();
+        // If height collapsed (1 row), retry after layout settles
+        if (term.rows <= 1) {
+          setTimeout(() => {
+            if (!this.term) return;
+            fitAddon.fit();
+            log("info", `TerminalManager.init: re-fitted to ${term.cols}x${term.rows}`);
+            resolve();
+          }, 50);
+        } else {
+          resolve();
+        }
       });
     });
 

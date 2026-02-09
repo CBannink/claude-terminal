@@ -21,6 +21,12 @@ function App() {
         e.preventDefault();
         setSettingsOpen(true);
       }
+      // Ctrl+E → Toggle Editor
+      if (e.ctrlKey && e.key === "e") {
+        e.preventDefault();
+        const { editorOpen, setEditorOpen } = useTerminalStore.getState();
+        setEditorOpen(!editorOpen);
+      }
     };
 
     window.addEventListener("keydown", handler);
