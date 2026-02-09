@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicegram/nicetauri/refs/heads/main/crates/tauri-utils/schema.json",
+  "identifier": "default",
+  "description": "Default capabilities for Claude Terminal",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "shell:allow-open",
+    "store:default",
+    "os:default",
+    "pty:default"
+  ]
+}
