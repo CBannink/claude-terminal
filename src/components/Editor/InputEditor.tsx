@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { EditorView, keymap } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
+import { basicSetup } from "codemirror";
 import { markdown } from "@codemirror/lang-markdown";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { defaultKeymap } from "@codemirror/commands";
@@ -60,8 +61,8 @@ export function InputEditor() {
       state: EditorState.create({
         doc: editorBuffer,
         extensions: [
+          basicSetup,
           keymap.of([
-            ...defaultKeymap,
             {
               key: "Ctrl-Enter",
               run: () => {
