@@ -22,8 +22,8 @@ export function TerminalView() {
 
     const term = terminalManager.init(containerRef.current, settings);
 
-    // Auto-start Claude on mount
-    startClaude(term).catch((err) => {
+    // Wait for terminal to have correct dimensions before spawning PTY
+    terminalManager.whenReady().then(() => startClaude(term)).catch((err) => {
       const message = err instanceof Error ? err.message : String(err);
       term.writeln("");
       if (message.toLowerCase().includes("not found")) {

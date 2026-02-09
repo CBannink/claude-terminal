@@ -6,6 +6,7 @@ import { SearchAddon } from "@xterm/addon-search";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { SerializeAddon } from "@xterm/addon-serialize";
 import { themes, getXtermTheme } from "./themes";
+import { log } from "./logger";
 import type { AppSettings } from "../types/settings";
 
 class TerminalManager {
@@ -13,8 +14,12 @@ class TerminalManager {
   fitAddon: FitAddon | null = null;
   searchAddon: SearchAddon | null = null;
 
+  private readyPromise: Promise<void> | null = null;
+
   init(container: HTMLDivElement, settings: AppSettings): Terminal {
     if (this.term) return this.term;
+
+    log("info", "TerminalManager.init: creating terminal instance");
 
     const theme = themes[settings.theme] || themes.dark;
 
@@ -53,11 +58,19 @@ class TerminalManager {
         webglAddon.dispose();
       });
       term.loadAddon(webglAddon);
+      log("info", "TerminalManager.init: WebGL renderer loaded");
     } catch {
-      // WebGL not available, canvas renderer is fine
+      log("warn", "TerminalManager.init: WebGL not available, using canvas renderer");
     }
 
-    fitAddon.fit();
+    // Defer fit to next frame so the container has computed dimensions
+    this.readyPromise = new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        fitAddon.fit();
+        log("info", `TerminalManager.init: fitted to ${term.cols}x${term.rows}`);
+        resolve();
+      });
+    });
 
     this.term = term;
     this.fitAddon = fitAddon;
@@ -66,15 +79,22 @@ class TerminalManager {
     return term;
   }
 
+  /** Resolves after the initial fit has computed correct dimensions */
+  whenReady(): Promise<void> {
+    return this.readyPromise ?? Promise.resolve();
+  }
+
   fit() {
     this.fitAddon?.fit();
   }
 
   dispose() {
+    log("info", "TerminalManager.dispose: cleaning up");
     this.term?.dispose();
     this.term = null;
     this.fitAddon = null;
     this.searchAddon = null;
+    this.readyPromise = null;
   }
 
   findNext(query: string) {

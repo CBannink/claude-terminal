@@ -2,6 +2,7 @@ import { useRef, useCallback } from "react";
 import { spawn } from "tauri-pty";
 import type { Terminal } from "@xterm/xterm";
 import { CLAUDE_ENV } from "../lib/constants";
+import { log } from "../lib/logger";
 
 interface PtyInstance {
   write: (data: string) => void;
@@ -50,6 +51,7 @@ export function usePty() {
         ...options?.env,
       };
 
+      log("info", `usePty.spawn: ${command} [${args.join(", ")}]`);
       let pty: PtyInstance;
       try {
         pty = spawn(command, args, {

@@ -10,6 +10,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::claude::resolve_claude_path,
             commands::claude::list_sessions,
+            commands::log::append_log,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
