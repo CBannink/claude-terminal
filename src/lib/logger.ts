@@ -12,14 +12,19 @@ interface QueueEntry {
 
 const queue: QueueEntry[] = [];
 let flushing = false;
+let intervalId: ReturnType<typeof setInterval> | null = null;
 
 function formatEntry(level: LogLevel, message: string): string {
   const now = new Date().toISOString();
   return `[${now}] [${level.toUpperCase()}] ${message}`;
 }
 
+function isTauriReady(): boolean {
+  return !!window.__TAURI_INTERNALS__;
+}
+
 async function flush() {
-  if (flushing || queue.length === 0) return;
+  if (flushing || queue.length === 0 || !isTauriReady()) return;
   flushing = true;
 
   try {
@@ -29,16 +34,26 @@ async function flush() {
         await invoke("append_log", { message: entry.text });
         queue.shift();
       } catch {
-        // Tauri not ready yet or command failed — retry or drop
         entry.retries++;
         if (entry.retries >= MAX_RETRIES) {
-          queue.shift(); // Drop after max retries
+          queue.shift();
         }
         break;
       }
     }
   } finally {
     flushing = false;
+    // Stop interval when queue is drained
+    if (queue.length === 0 && intervalId !== null) {
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+  }
+}
+
+function ensureInterval() {
+  if (intervalId === null) {
+    intervalId = setInterval(() => { flush().catch(() => {}); }, 1000);
   }
 }
 
@@ -51,8 +66,10 @@ export function log(level: LogLevel, message: string) {
   }
 
   queue.push(entry);
+
+  // Start periodic flush lazily (only when entries exist)
+  ensureInterval();
+
+  // Try immediate flush if Tauri is ready
   flush().catch(() => {});
 }
-
-// Flush any remaining entries periodically (catches queued-before-ready entries)
-setInterval(() => { flush().catch(() => {}); }, 1000);

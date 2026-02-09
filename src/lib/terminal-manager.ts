@@ -14,6 +14,8 @@ class TerminalManager {
   fitAddon: FitAddon | null = null;
   searchAddon: SearchAddon | null = null;
 
+  private readyPromise: Promise<void> | null = null;
+
   init(container: HTMLDivElement, settings: AppSettings): Terminal {
     if (this.term) return this.term;
 
@@ -62,9 +64,12 @@ class TerminalManager {
     }
 
     // Defer fit to next frame so the container has computed dimensions
-    requestAnimationFrame(() => {
-      fitAddon.fit();
-      log("info", `TerminalManager.init: fitted to ${term.cols}x${term.rows}`);
+    this.readyPromise = new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        fitAddon.fit();
+        log("info", `TerminalManager.init: fitted to ${term.cols}x${term.rows}`);
+        resolve();
+      });
     });
 
     this.term = term;
@@ -72,6 +77,11 @@ class TerminalManager {
     this.searchAddon = searchAddon;
 
     return term;
+  }
+
+  /** Resolves after the initial fit has computed correct dimensions */
+  whenReady(): Promise<void> {
+    return this.readyPromise ?? Promise.resolve();
   }
 
   fit() {
