@@ -47,6 +47,7 @@ export const useTerminalStore = create<TerminalState>((set) => ({
   reset: () =>
     set({
       status: "idle",
+      claudePath: null,
       sessionId: null,
       model: null,
       exitCode: null,

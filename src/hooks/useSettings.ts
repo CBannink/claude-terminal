@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { load } from "@tauri-apps/plugin-store";
 import { useSettingsStore } from "../stores/settingsStore";
 import type { AppSettings } from "../types/settings";
@@ -16,6 +16,7 @@ function getStore() {
 
 export function useSettings() {
   const { settings, loaded, setSettings, loadSettings } = useSettingsStore();
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (loaded) return;
@@ -29,22 +30,34 @@ export function useSettings() {
         } else {
           loadSettings(DEFAULT_SETTINGS);
         }
-      } catch {
+      } catch (err) {
+        console.error("Failed to load settings:", err);
         loadSettings(DEFAULT_SETTINGS);
       }
     })();
   }, [loaded, loadSettings]);
 
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
+
   const updateSettings = useCallback(
-    async (partial: Partial<AppSettings>) => {
+    (partial: Partial<AppSettings>) => {
       setSettings(partial);
-      try {
-        const store = await getStore();
-        const current = useSettingsStore.getState().settings;
-        await store.set("settings", current);
-      } catch {
-        // Settings save failed, will retry on next update
-      }
+
+      // Debounce persistence to avoid race conditions with rapid updates
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(async () => {
+        try {
+          const store = await getStore();
+          const current = useSettingsStore.getState().settings;
+          await store.set("settings", current);
+        } catch (err) {
+          console.error("Failed to persist settings:", err);
+        }
+      }, 300);
     },
     [setSettings]
   );

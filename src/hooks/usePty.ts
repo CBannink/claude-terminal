@@ -15,6 +15,22 @@ export function usePty() {
   const ptyRef = useRef<PtyInstance | null>(null);
   const disposablesRef = useRef<Array<{ dispose: () => void }>>([]);
 
+  const cleanup = useCallback(() => {
+    for (const d of disposablesRef.current) {
+      d.dispose();
+    }
+    disposablesRef.current = [];
+
+    if (ptyRef.current) {
+      try {
+        ptyRef.current.kill();
+      } catch {
+        // Already dead
+      }
+      ptyRef.current = null;
+    }
+  }, []);
+
   const spawnProcess = useCallback(
     (
       command: string,
@@ -34,12 +50,18 @@ export function usePty() {
         ...options?.env,
       };
 
-      const pty = spawn(command, args, {
-        cols: term.cols,
-        rows: term.rows,
-        cwd: options?.cwd,
-        env,
-      }) as unknown as PtyInstance;
+      let pty: PtyInstance;
+      try {
+        pty = spawn(command, args, {
+          cols: term.cols,
+          rows: term.rows,
+          cwd: options?.cwd,
+          env,
+        }) as unknown as PtyInstance;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        throw new Error(`Failed to spawn process "${command}": ${message}`);
+      }
 
       ptyRef.current = pty;
 
@@ -69,24 +91,8 @@ export function usePty() {
 
       return pty;
     },
-    []
+    [cleanup]
   );
-
-  const cleanup = useCallback(() => {
-    for (const d of disposablesRef.current) {
-      d.dispose();
-    }
-    disposablesRef.current = [];
-
-    if (ptyRef.current) {
-      try {
-        ptyRef.current.kill();
-      } catch {
-        // Already dead
-      }
-      ptyRef.current = null;
-    }
-  }, []);
 
   const write = useCallback((data: string) => {
     ptyRef.current?.write(data);

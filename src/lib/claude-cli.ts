@@ -19,16 +19,17 @@ export function buildClaudeArgs(options: ClaudeSpawnOptions): string[] {
     args.push("--continue");
   }
 
-  if (options.resumeId) {
-    args.push("--resume", options.resumeId);
+  if (options.resumeId && options.resumeId.trim()) {
+    args.push("--resume", options.resumeId.trim());
   }
 
-  if (options.model) {
-    args.push("--model", options.model);
+  if (options.model && options.model.trim()) {
+    args.push("--model", options.model.trim());
   }
 
   if (options.extraArgs) {
-    args.push(...options.extraArgs);
+    const filtered = options.extraArgs.filter((a) => a && a.trim());
+    args.push(...filtered);
   }
 
   return args;

@@ -1,8 +1,9 @@
 import { themes } from "../../lib/themes";
+import type { ThemeName } from "../../types/settings";
 
 interface ThemePickerProps {
-  currentTheme: string;
-  onSelect: (themeId: string) => void;
+  currentTheme: ThemeName;
+  onSelect: (themeId: ThemeName) => void;
 }
 
 export function ThemePicker({ currentTheme, onSelect }: ThemePickerProps) {
@@ -11,7 +12,7 @@ export function ThemePicker({ currentTheme, onSelect }: ThemePickerProps) {
       {Object.entries(themes).map(([id, theme]) => (
         <button
           key={id}
-          onClick={() => onSelect(id)}
+          onClick={() => onSelect(id as ThemeName)}
           className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border transition-all ${
             currentTheme === id
               ? "border-indigo-500 bg-indigo-500/10"
