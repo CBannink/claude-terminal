@@ -1,3 +1,5 @@
+export type ThemeName = "dark" | "light" | "monokai" | "dracula" | "tokyoNight" | "catppuccin";
+
 export interface TerminalTheme {
   name: string;
   background: string;
@@ -5,7 +7,6 @@ export interface TerminalTheme {
   cursor: string;
   cursorAccent: string;
   selectionBackground: string;
-  selectionForeground?: string;
   black: string;
   red: string;
   green: string;
@@ -25,14 +26,13 @@ export interface TerminalTheme {
 }
 
 export interface AppSettings {
-  theme: string;
+  theme: ThemeName;
   fontFamily: string;
   fontSize: number;
   cursorStyle: "block" | "underline" | "bar";
   cursorBlink: boolean;
   scrollback: number;
   claudeModel: string;
-  claudeArgs: string[];
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -43,5 +43,4 @@ export const DEFAULT_SETTINGS: AppSettings = {
   cursorBlink: true,
   scrollback: 5000,
   claudeModel: "",
-  claudeArgs: [],
 };

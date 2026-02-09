@@ -3,14 +3,54 @@
 ## Overview
 
 Multi-agent review pipeline that enforces code quality before any code reaches master.
-**No agent may commit, push, or merge without passing through this pipeline.**
+**The code review step runs automatically after every code change — no manual trigger needed.**
+
+## Automatic Code Review (Inline)
+
+When Claude Code is used to write or modify code in this project, it **automatically** runs the code review agent after completing changes. This is configured in `CLAUDE.md` and is mandatory.
+
+### What happens automatically
+
+1. TypeScript check (`npx tsc --noEmit`)
+2. Rust check (`cargo check`) if Rust files changed
+3. Code review subagent launched with `agents/code-reviewer.md` instructions
+4. Subagent reads all changed files in full + the git diff
+5. Subagent produces a Code Review Report with verdict (PASS / FAIL / PASS WITH NOTES)
+6. If FAIL → issues are fixed and review re-runs
+7. If PASS → verdict is reported to user
+
+### How the subagent is invoked
+
+Claude Code uses the Task tool with `subagent_type=Explore` and provides:
+- The full code-reviewer prompt from `agents/code-reviewer.md`
+- The list of changed files (`git diff --name-only`)
+- The full diff (`git diff`)
+- Instructions to read each changed file IN FULL and produce the report
+
+This gives the reviewer full context without polluting the main conversation.
+
+## Manual Pipeline (for PR review and reflection)
+
+```bash
+# PowerShell (Windows)
+.\scripts\review-pipeline.ps1 code-review      # Manual code review (if needed)
+.\scripts\review-pipeline.ps1 pr-review         # PR review before merge
+.\scripts\review-pipeline.ps1 self-reflect       # Post-merge reflection
+.\scripts\review-pipeline.ps1 full               # All three in sequence
+
+# Bash (macOS/Linux)
+./scripts/review-pipeline.sh code-review
+./scripts/review-pipeline.sh pr-review
+./scripts/review-pipeline.sh self-reflect
+./scripts/review-pipeline.sh full
+```
 
 ## Pipeline Flow
 
 ```
 Agent writes code
        │
-       ▼
+       ▼ (AUTOMATIC — runs inline, no manual trigger)
 ┌──────────────────────────────┐
 │  1. CODE REVIEWER AGENT      │  Senior/Staff Engineer
 │     Reviews: bugs, security, │  Checks Tauri commands, React hooks,
@@ -23,7 +63,7 @@ Agent writes code
            ▼
     Commit + Push + Create PR
            │
-           ▼
+           ▼ (MANUAL — run script or ask Claude Code)
 ┌──────────────────────────────┐
 │  2. PR REVIEWER AGENT        │  Principal Engineer
 │     Reviews: breaking        │  Analyzes PR against full codebase:
@@ -38,7 +78,7 @@ Agent writes code
            ▼
        Merge to master
            │
-           ▼
+           ▼ (MANUAL — run script or ask Claude Code)
 ┌──────────────────────────────┐
 │  3. SELF-REFLECT AGENT       │  Meta-Cognitive
 │     Analyzes: what happened, │  Captures Tauri/React/PTY learnings,
@@ -47,29 +87,13 @@ Agent writes code
 └──────────────────────────────┘
 ```
 
-## Usage
+## Agent Configs
 
-```bash
-# Bash
-./scripts/review-pipeline.sh code-review
-./scripts/review-pipeline.sh pr-review
-./scripts/review-pipeline.sh self-reflect
-./scripts/review-pipeline.sh full
-
-# PowerShell (Windows)
-.\scripts\review-pipeline.ps1 code-review
-.\scripts\review-pipeline.ps1 pr-review
-.\scripts\review-pipeline.ps1 self-reflect
-.\scripts\review-pipeline.ps1 full
-```
-
-## From within a Claude Code session
-
-```
-> "Review my changes using agents/code-reviewer.md"
-> "Run PR review using agents/pr-reviewer.md"
-> "Run self-reflection using agents/self-reflect.md"
-```
+| Agent | File | Role | Trigger |
+|-------|------|------|---------|
+| Code Reviewer | `agents/code-reviewer.md` | Senior/Staff Engineer | **Automatic** after code changes |
+| PR Reviewer | `agents/pr-reviewer.md` | Principal Engineer | Manual before merge |
+| Self-Reflect | `agents/self-reflect.md` | Meta-Cognitive | Manual after merge |
 
 ## Review Artifacts
 
@@ -86,7 +110,8 @@ Agent writes code
 
 ## Rules
 
-1. NEVER push to master without passing code review
-2. NEVER merge a PR without passing PR review
-3. ALWAYS run self-reflect after merging
-4. If review FAILS → fix issues → re-run (do NOT bypass)
+1. Code review runs **automatically** after every code change — never skip it
+2. NEVER push to master without a passing code review
+3. NEVER merge a PR without passing PR review
+4. ALWAYS run self-reflect after merging
+5. If review FAILS → fix issues → re-run (do NOT bypass)

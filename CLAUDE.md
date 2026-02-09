@@ -1,5 +1,23 @@
 # Claude Terminal - Development Guide
 
+## MANDATORY: Automatic Code Review
+
+**After making ANY code changes, you MUST automatically run a code review before finishing.** Do not wait to be asked. This is not optional.
+
+### How to auto-review
+
+After writing/editing code, immediately:
+
+1. **Run `npx tsc --noEmit`** to verify TypeScript compiles
+2. **Run `cargo check`** (via `cmd.exe /c "set PATH=%USERPROFILE%\.cargo\bin;%PATH% && cd C:\claude-terminal\src-tauri && cargo check"`) if any Rust files changed
+3. **Launch a code review subagent** using the Task tool with `subagent_type=Explore`. Give it the full `agents/code-reviewer.md` prompt, the list of changed files, and the `git diff` output. It must read every changed file IN FULL and produce a Code Review Report with a verdict.
+4. **If the review returns FAIL**: fix all Critical Issues, then re-run the review. Do NOT proceed to commit.
+5. **If the review returns PASS or PASS WITH NOTES**: report the verdict to the user and proceed.
+
+This workflow is **blocking** — never skip it, never summarize it away, never say "I'll review later". The review happens NOW, inline, every time.
+
+---
+
 ## Project Overview
 
 Desktop terminal app for Claude Code, built with Tauri 2 + React + xterm.js.
@@ -55,20 +73,19 @@ src/                React frontend (TypeScript)
 ├── hooks/
 │   ├── useClaudeProcess.ts     Spawns Claude or shell via PTY, manages lifecycle
 │   ├── usePty.ts               PTY spawn/write/resize/kill via tauri-pty
-│   ├── useSettings.ts          Load/save settings via tauri-plugin-store
-│   ├── useTerminal.ts          Convenience wrapper (currently unused, kept for Phase 2)
+│   ├── useSettings.ts          Load/save settings via tauri-plugin-store (debounced)
 │   └── useWindowResize.ts      Debounced window resize → fit terminal
 ├── stores/
 │   ├── terminalStore.ts        Session state (status, error, UI toggles) via Zustand
 │   └── settingsStore.ts        User preferences via Zustand
 ├── lib/
 │   ├── terminal-manager.ts     **SINGLETON** xterm.js instance (init, fit, search, theme)
-│   ├── claude-cli.ts           Invoke Rust resolve_claude_path, build CLI args
+│   ├── claude-cli.ts           Invoke Rust resolve_claude_path, build CLI args (validated)
 │   ├── themes.ts               6 built-in themes with xterm color mappings
 │   └── constants.ts            App name, version, store file, default env vars
 └── types/
     ├── terminal.ts             SessionStatus, TerminalSession, PtyHandle
-    └── settings.ts             TerminalTheme, AppSettings, DEFAULT_SETTINGS
+    └── settings.ts             ThemeName, TerminalTheme, AppSettings, DEFAULT_SETTINGS
 ```
 
 ## Key Design Decisions
@@ -79,9 +96,11 @@ src/                React frontend (TypeScript)
 
 3. **No custom ANSI parsing**: xterm.js handles ALL rendering. Raw PTY bytes go straight to `term.write()`. This means Claude's full TUI (colors, cursor movement, clearing) works out of the box.
 
-4. **Settings via tauri-plugin-store**: Persisted as JSON in Tauri's app data dir. Loaded on startup, saved on every change with auto-save.
+4. **Settings via tauri-plugin-store**: Persisted as JSON in Tauri's app data dir. Loaded on startup, saved with 300ms debounce on change.
 
 5. **Claude resolution**: Rust command checks known install paths first, then falls back to `where`/`which` PATH lookup. Frontend calls `invoke("resolve_claude_path")`.
+
+6. **ThemeName union type**: Theme names are typed as `"dark" | "light" | "monokai" | "dracula" | "tokyoNight" | "catppuccin"` — invalid themes are caught at compile time.
 
 ## Data Flow
 
@@ -104,10 +123,8 @@ Window resize → fitAddon.fit → term.onResize → pty.resize
 - App has NOT been runtime-tested yet (only build-verified)
 - Session resume (`claude --resume <id>`) untested with real sessions
 - WebGL addon may fail on some systems (has canvas fallback)
-- `useTerminal.ts` hook is unused (was replaced by singleton pattern)
 - `Ctrl+Shift+N` new session shortcut mentioned in README but not wired up in App.tsx
 - Only Windows build verified; macOS/Linux CI added but untested
-- The `homeDir()` from `@tauri-apps/api/path` is async and used in `useClaudeProcess.ts`
 - Error recovery after PTY crash: toolbar buttons work but terminal state may be stale
 
 ## Phase 2 Roadmap (Deferred)
@@ -119,34 +136,32 @@ Window resize → fitAddon.fit → term.onResize → pty.resize
 - Split panes
 - Plugin system
 
-## Agent Review Pipeline (MANDATORY)
+## Agent Review Pipeline
 
-All code changes MUST pass through the multi-agent review pipeline before merging.
-See `agents/README.md` for full documentation.
+All code changes MUST pass through the review pipeline. The code review step is **automatic** — Claude Code runs it inline after every change without being asked.
 
-**Pipeline**:
-1. Write code
-2. **Code Review** → `.\scripts\review-pipeline.ps1 code-review`
-   - Senior/Staff engineer reviews for bugs, security, memory leaks, type safety
-   - Checks Tauri commands, React hooks, PTY lifecycle, xterm.js patterns
-   - Must PASS before committing/pushing
-3. Commit → Push → Create PR
-4. **PR Review** → `.\scripts\review-pipeline.ps1 pr-review`
-   - Principal engineer reviews PR against full codebase
-   - Checks Rust↔React contract, store shape, build configs, cross-platform
-   - Must APPROVE before merging
-5. Merge to master
-6. **Self-Reflect** → `.\scripts\review-pipeline.ps1 self-reflect`
-   - Captures learnings, updates metrics, suggests improvements
+### Pipeline Steps
 
-**Agent configs**: `agents/code-reviewer.md`, `agents/pr-reviewer.md`, `agents/self-reflect.md`
-**Review artifacts**: `.claude/reflections/` (reviews, learnings, metrics)
-**Read before starting work**: `.claude/reflections/LEARNINGS.md`
+| Step | Agent | When | How |
+|------|-------|------|-----|
+| **Code Review** | Senior/Staff Engineer | After writing code (automatic) | Subagent reads changed files + diff, produces verdict |
+| **PR Review** | Principal Engineer | Before merging PR | `.\scripts\review-pipeline.ps1 pr-review` |
+| **Self-Reflect** | Meta-Cognitive | After merging | `.\scripts\review-pipeline.ps1 self-reflect` |
+
+### Agent Configs
+- `agents/code-reviewer.md` — Code review checklist and output format
+- `agents/pr-reviewer.md` — PR review checklist and output format
+- `agents/self-reflect.md` — Post-merge reflection format
+
+### Review Artifacts
+- `.claude/reflections/reviews/` — Individual review reports
+- `.claude/reflections/LEARNINGS.md` — Persistent knowledge (read before starting work)
+- `.claude/reflections/METRICS.md` — Quality tracking
 
 ### Pipeline Rules
-- NEVER push to master without passing code review
+- NEVER skip the automatic code review after changes
+- NEVER push to master without a passing code review
 - NEVER merge a PR without PR reviewer approval
-- ALWAYS run self-reflect after merging
 - If review FAILS → fix issues → re-run (do NOT bypass)
 
 ## Code Conventions

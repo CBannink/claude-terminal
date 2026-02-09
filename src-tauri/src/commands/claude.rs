@@ -73,7 +73,10 @@ pub fn list_sessions() -> Result<Vec<SessionInfo>, String> {
 
         let entries = match std::fs::read_dir(project_entry.path()) {
             Ok(e) => e,
-            Err(_) => continue,
+            Err(e) => {
+                eprintln!("Warning: could not read project dir {:?}: {}", project_entry.path(), e);
+                continue;
+            }
         };
 
         for entry in entries.flatten() {

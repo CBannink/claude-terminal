@@ -23,13 +23,17 @@ export function TerminalView() {
     const term = terminalManager.init(containerRef.current, settings);
 
     // Auto-start Claude on mount
-    startClaude(term).catch(() => {
-      // Show helpful error in terminal
+    startClaude(term).catch((err) => {
+      const message = err instanceof Error ? err.message : String(err);
       term.writeln("");
-      term.writeln("  \x1b[1;33mClaude CLI not found\x1b[0m");
-      term.writeln("");
-      term.writeln("  Install Claude Code:");
-      term.writeln("    \x1b[36mnpm install -g @anthropic-ai/claude-code\x1b[0m");
+      if (message.toLowerCase().includes("not found")) {
+        term.writeln("  \x1b[1;33mClaude CLI not found\x1b[0m");
+        term.writeln("");
+        term.writeln("  Install Claude Code:");
+        term.writeln("    \x1b[36mnpm install -g @anthropic-ai/claude-code\x1b[0m");
+      } else {
+        term.writeln(`  \x1b[1;31mFailed to start Claude: ${message}\x1b[0m`);
+      }
       term.writeln("");
       term.writeln("  Or press \x1b[1mShell\x1b[0m in the toolbar to open a regular terminal.");
       term.writeln("");

@@ -1,6 +1,6 @@
-import type { TerminalTheme } from "../types/settings";
+import type { TerminalTheme, ThemeName } from "../types/settings";
 
-export const themes: Record<string, TerminalTheme> = {
+export const themes: Record<ThemeName, TerminalTheme> = {
   dark: {
     name: "Dark",
     background: "#1a1b26",
@@ -159,7 +159,6 @@ export function getXtermTheme(theme: TerminalTheme) {
     cursor: theme.cursor,
     cursorAccent: theme.cursorAccent,
     selectionBackground: theme.selectionBackground,
-    selectionForeground: theme.selectionForeground,
     black: theme.black,
     red: theme.red,
     green: theme.green,
