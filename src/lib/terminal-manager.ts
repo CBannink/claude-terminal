@@ -94,6 +94,7 @@ class TerminalManager {
     this.term = null;
     this.fitAddon = null;
     this.searchAddon = null;
+    this.readyPromise = null;
   }
 
   findNext(query: string) {

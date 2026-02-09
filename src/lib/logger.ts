@@ -60,6 +60,11 @@ function ensureInterval() {
 export function log(level: LogLevel, message: string) {
   const entry: QueueEntry = { text: formatEntry(level, message), retries: 0 };
 
+  // Always echo errors to console for developer observability
+  if (level === "error") {
+    console.error(message);
+  }
+
   // Cap queue size — drop oldest entries when full
   if (queue.length >= MAX_QUEUE_SIZE) {
     queue.shift();
