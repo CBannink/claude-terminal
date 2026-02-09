@@ -2,24 +2,23 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useCallback } from "react";
 
 export function TitleBar() {
-  const appWindow = getCurrentWindow();
-
   const handleMinimize = useCallback(() => {
-    appWindow.minimize();
-  }, [appWindow]);
+    getCurrentWindow().minimize();
+  }, []);
 
   const handleMaximize = useCallback(async () => {
+    const appWindow = getCurrentWindow();
     const maximized = await appWindow.isMaximized();
     if (maximized) {
       appWindow.unmaximize();
     } else {
       appWindow.maximize();
     }
-  }, [appWindow]);
+  }, []);
 
   const handleClose = useCallback(() => {
-    appWindow.close();
-  }, [appWindow]);
+    getCurrentWindow().close();
+  }, []);
 
   return (
     <div
@@ -35,6 +34,7 @@ export function TitleBar() {
           onClick={handleMinimize}
           className="w-12 h-9 flex items-center justify-center hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"
           tabIndex={-1}
+          aria-label="Minimize window"
         >
           <svg width="10" height="1" viewBox="0 0 10 1" fill="currentColor">
             <rect width="10" height="1" />
@@ -44,6 +44,7 @@ export function TitleBar() {
           onClick={handleMaximize}
           className="w-12 h-9 flex items-center justify-center hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"
           tabIndex={-1}
+          aria-label="Maximize window"
         >
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1">
             <rect x="0.5" y="0.5" width="9" height="9" />
@@ -53,6 +54,7 @@ export function TitleBar() {
           onClick={handleClose}
           className="w-12 h-9 flex items-center justify-center hover:bg-red-600 text-zinc-400 hover:text-white transition-colors"
           tabIndex={-1}
+          aria-label="Close window"
         >
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2">
             <line x1="0" y1="0" x2="10" y2="10" />
