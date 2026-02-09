@@ -6,6 +6,7 @@ import { SearchAddon } from "@xterm/addon-search";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { SerializeAddon } from "@xterm/addon-serialize";
 import { themes, getXtermTheme } from "./themes";
+import { log } from "./logger";
 import type { AppSettings } from "../types/settings";
 
 class TerminalManager {
@@ -15,6 +16,8 @@ class TerminalManager {
 
   init(container: HTMLDivElement, settings: AppSettings): Terminal {
     if (this.term) return this.term;
+
+    log("info", "TerminalManager.init: creating terminal instance");
 
     const theme = themes[settings.theme] || themes.dark;
 
@@ -53,11 +56,16 @@ class TerminalManager {
         webglAddon.dispose();
       });
       term.loadAddon(webglAddon);
+      log("info", "TerminalManager.init: WebGL renderer loaded");
     } catch {
-      // WebGL not available, canvas renderer is fine
+      log("warn", "TerminalManager.init: WebGL not available, using canvas renderer");
     }
 
-    fitAddon.fit();
+    // Defer fit to next frame so the container has computed dimensions
+    requestAnimationFrame(() => {
+      fitAddon.fit();
+      log("info", `TerminalManager.init: fitted to ${term.cols}x${term.rows}`);
+    });
 
     this.term = term;
     this.fitAddon = fitAddon;
@@ -71,6 +79,7 @@ class TerminalManager {
   }
 
   dispose() {
+    log("info", "TerminalManager.dispose: cleaning up");
     this.term?.dispose();
     this.term = null;
     this.fitAddon = null;

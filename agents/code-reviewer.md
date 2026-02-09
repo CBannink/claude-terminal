@@ -38,6 +38,8 @@ make it into a pull request.
 - **Tauri IPC safety**: Unsafe `invoke()` calls, missing error handling on Tauri commands
 - **Type safety**: `any` usage, unsafe casts, missing null checks
 - **PTY issues**: Data flow breaks (stdin/stdout piping), resize race conditions, zombie processes
+- **Initialization timing**: Tauri APIs (invoke, plugin-store, plugin-os, etc.) used in React useEffect/mount BEFORE `window.__TAURI_INTERNALS__` is available. All Tauri API calls must happen AFTER the IPC bridge is ready. The app uses `waitForTauri()` in `main.tsx` to gate rendering — if new code bypasses this (e.g., module-level Tauri calls, early imports that invoke), flag it as CRITICAL.
+- **DOM timing**: xterm.js `fitAddon.fit()` called before container has computed CSS dimensions (flex layout). Always defer fit to `requestAnimationFrame`. Check that terminal operations don't assume non-zero dimensions during mount.
 
 ### Step 3: Check for Major Issues (SHOULD fix)
 - **React patterns**: Missing cleanup in useEffect, stale closures, unnecessary re-renders

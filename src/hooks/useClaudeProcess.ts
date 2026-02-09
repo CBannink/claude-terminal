@@ -7,6 +7,7 @@ import { useSettingsStore } from "../stores/settingsStore";
 import type { Terminal } from "@xterm/xterm";
 import { platform } from "@tauri-apps/plugin-os";
 import { homeDir } from "@tauri-apps/api/path";
+import { log } from "../lib/logger";
 
 export function useClaudeProcess() {
   const { spawnProcess, cleanup } = usePty();
@@ -21,10 +22,12 @@ export function useClaudeProcess() {
     async (term: Terminal, options?: ClaudeSpawnOptions) => {
       reset();
       setStatus("starting");
+      log("info", "startClaude: resolving claude path");
 
       try {
         const claudePath = await resolveClaudePath();
         setClaudePath(claudePath);
+        log("info", `startClaude: found at ${claudePath}`);
 
         const spawnOptions: ClaudeSpawnOptions = {
           ...options,
@@ -41,17 +44,21 @@ export function useClaudeProcess() {
           cwd = os === "windows" ? "C:\\" : "/";
         }
 
+        log("info", `startClaude: spawning with args [${args.join(", ")}], cwd=${cwd}`);
         spawnProcess(claudePath, args, term, {
           cwd: options?.cwd || cwd,
           onExit: (exitCode) => {
+            log("info", `startClaude: process exited with code ${exitCode}`);
             setStatus("exited");
             setExitCode(exitCode);
           },
         });
 
         setStatus("running");
+        log("info", "startClaude: process running");
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
+        log("error", `startClaude: failed: ${message}`);
         setError(message);
         setStatus("error");
       }
@@ -74,9 +81,11 @@ export function useClaudeProcess() {
           cwd = os === "windows" ? "C:\\" : "/";
         }
 
+        log("info", `startShell: spawning ${shell} in ${cwd}`);
         spawnProcess(shell, [], term, {
           cwd,
           onExit: (exitCode) => {
+            log("info", `startShell: exited with code ${exitCode}`);
             setStatus("exited");
             setExitCode(exitCode);
           },
@@ -85,6 +94,7 @@ export function useClaudeProcess() {
         setStatus("running");
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
+        log("error", `startShell: failed: ${message}`);
         setError(message);
         setStatus("error");
       }
@@ -93,6 +103,7 @@ export function useClaudeProcess() {
   );
 
   const stopClaude = useCallback(() => {
+    log("info", "stopClaude: cleaning up");
     cleanup();
     setStatus("exited");
   }, [cleanup, setStatus]);
