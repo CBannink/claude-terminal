@@ -119,6 +119,36 @@ Window resize → fitAddon.fit → term.onResize → pty.resize
 - Split panes
 - Plugin system
 
+## Agent Review Pipeline (MANDATORY)
+
+All code changes MUST pass through the multi-agent review pipeline before merging.
+See `agents/README.md` for full documentation.
+
+**Pipeline**:
+1. Write code
+2. **Code Review** → `.\scripts\review-pipeline.ps1 code-review`
+   - Senior/Staff engineer reviews for bugs, security, memory leaks, type safety
+   - Checks Tauri commands, React hooks, PTY lifecycle, xterm.js patterns
+   - Must PASS before committing/pushing
+3. Commit → Push → Create PR
+4. **PR Review** → `.\scripts\review-pipeline.ps1 pr-review`
+   - Principal engineer reviews PR against full codebase
+   - Checks Rust↔React contract, store shape, build configs, cross-platform
+   - Must APPROVE before merging
+5. Merge to master
+6. **Self-Reflect** → `.\scripts\review-pipeline.ps1 self-reflect`
+   - Captures learnings, updates metrics, suggests improvements
+
+**Agent configs**: `agents/code-reviewer.md`, `agents/pr-reviewer.md`, `agents/self-reflect.md`
+**Review artifacts**: `.claude/reflections/` (reviews, learnings, metrics)
+**Read before starting work**: `.claude/reflections/LEARNINGS.md`
+
+### Pipeline Rules
+- NEVER push to master without passing code review
+- NEVER merge a PR without PR reviewer approval
+- ALWAYS run self-reflect after merging
+- If review FAILS → fix issues → re-run (do NOT bypass)
+
 ## Code Conventions
 
 - **Rust commands**: All `#[tauri::command]` functions in `src-tauri/src/commands/`
@@ -127,6 +157,7 @@ Window resize → fitAddon.fit → term.onResize → pty.resize
 - **Styling**: Tailwind CSS utility classes inline, no CSS modules
 - **TypeScript**: Strict mode, no `any`, types in `src/types/`
 - **Imports**: Absolute from `src/`, relative within same directory level
+- **Do NOT**: Push to master without review pipeline, use `any`, add `console.log`
 
 ## Dependencies (key versions)
 
