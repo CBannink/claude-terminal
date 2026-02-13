@@ -142,11 +142,11 @@ All code changes MUST pass through the review pipeline. The code review step is 
 
 ### Pipeline Steps
 
-| Step | Agent | When | How |
-|------|-------|------|-----|
-| **Code Review** | Senior/Staff Engineer | After writing code (automatic) | Subagent reads changed files + diff, produces verdict |
-| **PR Review** | Principal Engineer | Before merging PR | `.\scripts\review-pipeline.ps1 pr-review` |
-| **Self-Reflect** | Meta-Cognitive | After merging | `.\scripts\review-pipeline.ps1 self-reflect` |
+| Step | Agent | When | Focus | How |
+|------|-------|------|-------|-----|
+| **Code Review** | Senior/Staff Engineer | After writing code (automatic) | Reviews the NEW code written for bugs, security, memory leaks, type safety, React patterns | Subagent reads changed files + diff, produces verdict |
+| **PR Review** | Principal Engineer | Before merging PR | Reviews if new code BREAKS existing code - integration issues, regression risks, API contract changes | Task tool with pr-reviewer agent reads full codebase context |
+| **Self-Reflect** | Meta-Cognitive | After merging | Reflects on what went well/poorly | `.\scripts\review-pipeline.ps1 self-reflect` |
 
 ### Agent Configs
 - `agents/code-reviewer.md` — Code review checklist and output format
@@ -163,6 +163,8 @@ All code changes MUST pass through the review pipeline. The code review step is 
 - NEVER push to master without a passing code review
 - NEVER merge a PR without PR reviewer approval
 - If review FAILS → fix issues → re-run (do NOT bypass)
+- **Code Review Agent**: Reviews the quality of NEW code (bugs, patterns, conventions)
+- **PR Review Agent**: Reviews if new code BREAKS existing functionality (integration, regression, compatibility)
 
 ## Code Conventions
 
@@ -173,6 +175,7 @@ All code changes MUST pass through the review pipeline. The code review step is 
 - **TypeScript**: Strict mode, no `any`, types in `src/types/`
 - **Imports**: Absolute from `src/`, relative within same directory level
 - **Do NOT**: Push to master without review pipeline, use `any`, add `console.log`
+- **Git commits**: NEVER add `Co-Authored-By` lines or credit Claude/AI as a commit author
 
 ## Dependencies (key versions)
 

@@ -9,6 +9,8 @@ export function TerminalToolbar() {
   const setSettingsOpen = useTerminalStore((s) => s.setSettingsOpen);
   const setSearchOpen = useTerminalStore((s) => s.setSearchOpen);
   const setSessionPickerOpen = useTerminalStore((s) => s.setSessionPickerOpen);
+  const editorOpen = useTerminalStore((s) => s.editorOpen);
+  const setEditorOpen = useTerminalStore((s) => s.setEditorOpen);
 
   const handleNewSession = useCallback(async () => {
     const term = terminalManager.term;
@@ -40,6 +42,10 @@ export function TerminalToolbar() {
   const handleStop = useCallback(() => {
     stopClaude();
   }, [stopClaude]);
+
+  const handleToggleEditor = useCallback(() => {
+    setEditorOpen(!editorOpen);
+  }, [editorOpen, setEditorOpen]);
 
   const isRunning = status === "running" || status === "starting";
 
@@ -83,6 +89,14 @@ export function TerminalToolbar() {
       )}
 
       <div className="flex-1" />
+
+      <button
+        onClick={handleToggleEditor}
+        className="px-3 py-1 text-xs rounded bg-zinc-700 hover:bg-zinc-600 text-zinc-200 transition-colors"
+        title="Editor Mode (Ctrl+E)"
+      >
+        {editorOpen ? "Close Editor" : "Editor Mode"}
+      </button>
 
       <button
         onClick={() => setSearchOpen(true)}

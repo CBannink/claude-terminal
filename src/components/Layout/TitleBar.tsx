@@ -20,16 +20,23 @@ export function TitleBar() {
     getCurrentWindow().close();
   }, []);
 
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    // Only drag on left mouse button and not on window control buttons
+    if (e.button !== 0) return;
+    getCurrentWindow().startDragging();
+  }, []);
+
   return (
     <div
       data-tauri-drag-region
+      onMouseDown={handleDragStart}
       className="flex items-center h-9 bg-zinc-950 select-none"
     >
       <div data-tauri-drag-region className="flex items-center gap-2 px-3 flex-1">
         <span className="text-indigo-400 font-semibold text-sm">Claude Terminal</span>
       </div>
 
-      <div className="flex">
+      <div className="flex" onMouseDown={(e) => e.stopPropagation()}>
         <button
           onClick={handleMinimize}
           className="w-12 h-9 flex items-center justify-center hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"
