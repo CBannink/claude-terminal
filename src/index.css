@@ -12,3 +12,40 @@ body,
   color: #fff;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
+
+/* Terminal Input Enhancement Styles */
+.terminal-input-enhancement {
+  /* Terminal-consistent styling */
+  background: rgba(30, 30, 30, 0.8);
+  border: 1px solid rgba(60, 60, 60, 0.5);
+  color: #e0e0e0;
+  font-family: 'Monaco', 'Menlo', monospace;
+  
+  /* Subtle focus indicators */
+  transition: all 0.2s ease;
+}
+
+.terminal-input-enhancement:focus {
+  border-color: rgba(77, 171, 247, 0.6);
+  box-shadow: 0 0 0 1px rgba(77, 171, 247, 0.3);
+  outline: none;
+}
+
+/* Smooth transitions for overlay elements */
+.terminal-overlay-element {
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+/* Copy button animations */
+.copy-button {
+  transition: transform 0.1s ease, opacity 0.2s ease;
+}
+
+.copy-button:hover {
+  transform: scale(1.05);
+}
+
+.copy-button.copied {
+  background-color: rgba(34, 197, 94, 0.8);
+  color: white;
+}
