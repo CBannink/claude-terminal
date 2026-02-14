@@ -338,15 +338,8 @@ export function EnhancedTerminalView() {
   // Handle sending input
   const handleSend = useCallback((input: string) => {
     if (input.trim()) {
-      // Show user's input in terminal for consistency
-      const term = terminalManager.term;
-      if (term) {
-        term.write(`\r\n👤 You: ${input}\r\n`);
-      }
-
-      // Get the PTY instance directly to bypass terminal input blocking
+      // Get the PTY instance directly
       const pty = usePty();
-      console.log("Sending message:", input, "PTY available:", !!pty?.write);
       
       // Temporarily switch to terminal mode to allow input to be processed
       const originalInputMode = useTerminalStore.getState().inputMode;
@@ -355,11 +348,9 @@ export function EnhancedTerminalView() {
       try {
         if (pty && pty.write) {
           // Write directly to PTY (bypasses terminal onData handler)
-          console.log("Writing to PTY directly");
           pty.write(input + "\r");
         } else {
           // Fallback: try the normal sendInput method
-          console.log("Using fallback sendInput");
           sendInput(input + "\r");
         }
       } finally {
