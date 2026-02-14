@@ -12,6 +12,7 @@ import { messageService } from "../../lib/message-service";
 import { Send, Copy, Trash } from "lucide-react";
 import { TerminalOverlay } from "./TerminalOverlay";
 import { useTerminalStore } from "../../stores/terminalStore";
+import { CLIService } from "../../lib/cli-service";
 
 /**
  * Enhanced Terminal Input Props
@@ -330,31 +331,29 @@ function MessageCopyOverlay() {
  * Main component that combines terminal display with enhanced input and overlay
  */
 export function EnhancedTerminalView() {
-  const { sendInput } = useClaudeProcess();
-  const { write } = usePty();
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
   const terminalContainerRef = useRef<HTMLDivElement>(null);
 
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [messages, setMessages] = useState<any[]>([]);
+  const terminalContainerRef = useRef<HTMLDivElement>(null);
+  const model = useTerminalStore((s) => s.model);
+
   // Handle sending input
-  const handleSend = useCallback((input: string) => {
+  const handleSend = useCallback(async (input: string) => {
     if (!input.trim()) return;
     
-    // Get the terminal instance
-    const term = terminalManager.term;
-    
-    // Display the input in the terminal for visual feedback
-    if (term) {
-      term.write(`\r\n👤 You: ${input}\r\n`);
+    try {
+      // Execute command through CLI service
+      await CLIService.executeCommand(input, model);
+      
+      // Invalidate message cache since terminal content changed
+      messageService.invalidateCache();
+    } catch (error) {
+      console.error('Failed to execute command:', error);
     }
-    
-    // Write directly to the PTY process
-    // This bypasses the terminal's input mode check
-    write(input + "\r");
-    
-    // Invalidate message cache since terminal content changed
-    messageService.invalidateCache();
-  }, [write]);
+  }, [model]);
 
   // Focus terminal when clicking on it
   const handleTerminalClick = useCallback(() => {

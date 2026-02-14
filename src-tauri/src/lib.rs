@@ -11,6 +11,7 @@ pub fn run() {
             commands::claude::resolve_claude_path,
             commands::claude::list_sessions,
             commands::log::append_log,
+            commands::execute::execute_command,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
