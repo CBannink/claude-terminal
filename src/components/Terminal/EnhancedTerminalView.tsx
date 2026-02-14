@@ -12,6 +12,7 @@ import { messageService } from "../../lib/message-service";
 import { Send, Copy, Trash } from "lucide-react";
 import { TerminalOverlay } from "./TerminalOverlay";
 import { useTerminalStore } from "../../stores/terminalStore";
+import { useInputProcessor } from "../../hooks/useInputProcessor";
 
 /**
  * Enhanced Terminal Input Props
@@ -331,38 +332,21 @@ function MessageCopyOverlay() {
  */
 export function EnhancedTerminalView() {
   const { sendInput } = useClaudeProcess();
+  const { processInput } = useInputProcessor();
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
   const terminalContainerRef = useRef<HTMLDivElement>(null);
-  
+
   // Handle sending input
   const handleSend = useCallback((input: string) => {
     if (!input.trim()) return;
     
-    // Get the PTY instance directly
-    const pty = usePty();
+    // Process input through the input processor
+    processInput(input, 'editor');
     
-    // Get the terminal instance to display the input
-    const term = terminalManager.term;
-    
-    // Display the input in the terminal for visual feedback
-    if (term) {
-      term.write(`\r\n👤 You: ${input}\r\n`);
-    }
-    
-    // Directly write to the PTY process
-    // This bypasses the terminal's input mode check
-    if (pty && pty.write) {
-      // Add a newline to ensure the command is executed
-      pty.write(input + "\r");
-    } else {
-      // Fallback: try the normal sendInput method
-      sendInput(input + "\r");
-    }
-
     // Invalidate message cache since terminal content changed
     messageService.invalidateCache();
-  }, [sendInput]);
+  }, [processInput]);
 
   // Focus terminal when clicking on it
   const handleTerminalClick = useCallback(() => {
