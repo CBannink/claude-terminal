@@ -79,11 +79,14 @@ export function usePty() {
       // Switching modes while typing is safe because Zustand updates are synchronous,
       // but UI should only allow mode switching when terminal is idle for best UX.
       const inputDisposable = term.onData((data: string) => {
-        const { inputMode } = useTerminalStore.getState();
-        if (inputMode === "terminal") {
+        const { inputMode, isEnhancedMode, editorOpen } = useTerminalStore.getState();
+        
+        // In enhanced mode, we handle input through the enhanced editor
+        // but we still need to allow programmatic input (like from handleSend)
+        // We check editorOpen instead of isEnhancedMode to allow input when editor is closed
+        if (inputMode === "terminal" || !editorOpen) {
           pty.write(data);
         }
-        // In editor mode: terminal input is suppressed
       });
       disposablesRef.current.push(inputDisposable);
 
@@ -105,22 +108,7 @@ export function usePty() {
   );
 
   const write = useCallback((data: string) => {
-    console.log("=== usePty.write called ===");
-    console.log("Data to write:", JSON.stringify(data));
-    console.log("PTY instance available:", !!ptyRef.current);
-    
-    if (!ptyRef.current) {
-      console.error("No PTY instance available to write to");
-      return;
-    }
-    
-    try {
-      console.log("Writing to PTY:", JSON.stringify(data));
-      ptyRef.current.write(data);
-      console.log("PTY write successful");
-    } catch (error) {
-      console.error("Error writing to PTY:", error);
-    }
+    ptyRef.current?.write(data);
   }, []);
 
   const resize = useCallback((cols: number, rows: number) => {

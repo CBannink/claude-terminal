@@ -337,55 +337,38 @@ export function EnhancedTerminalView() {
   
   // Handle sending input
   const handleSend = useCallback((input: string) => {
-    console.log("=== EnhancedTerminalView.handleSend START ===");
-    console.log("Input to send:", input);
+    if (!input.trim()) return;
     
-    if (!input.trim()) {
-      console.log("Input is empty or whitespace only, skipping");
-      return;
+    // Get the terminal instance
+    const term = terminalManager.term;
+    
+    // Focus the terminal to ensure it's ready to receive input
+    if (term) {
+      term.focus();
     }
     
     // Get the PTY instance directly
     const pty = usePty();
-    console.log("PTY instance:", pty);
-    console.log("PTY write method available:", !!pty?.write);
     
-    // Get current terminal state
-    const term = terminalManager.term;
-    console.log("Terminal instance:", term);
-    
-    // Get current input mode
-    const originalInputMode = useTerminalStore.getState().inputMode;
-    console.log("Original input mode:", originalInputMode);
-    
-    // Temporarily switch to terminal mode to allow input to be processed
-    console.log("Switching to terminal mode for input processing");
-    useTerminalStore.getState().setInputMode("terminal");
+    // Temporarily set editorOpen to false to allow input to be processed
+    const originalEditorOpen = useTerminalStore.getState().editorOpen;
+    useTerminalStore.getState().setEditorOpen(false);
     
     try {
+      // Write directly to the PTY if available
       if (pty && pty.write) {
-        console.log("Writing directly to PTY:", input + "\\r");
         pty.write(input + "\r");
-        console.log("PTY write completed");
       } else {
-        console.log("PTY write not available, using fallback sendInput");
-        console.log("Calling sendInput with:", input + "\\r");
+        // Fallback: try the normal sendInput method
         sendInput(input + "\r");
-        console.log("sendInput completed");
       }
-    } catch (error) {
-      console.error("Error sending input:", error);
     } finally {
-      // Restore the original input mode
-      console.log("Restoring input mode to:", originalInputMode);
-      useTerminalStore.getState().setInputMode(originalInputMode);
-      console.log("Input mode restored");
+      // Restore the original editorOpen state
+      useTerminalStore.getState().setEditorOpen(originalEditorOpen);
     }
 
     // Invalidate message cache since terminal content changed
-    console.log("Invalidating message cache");
     messageService.invalidateCache();
-    console.log("=== EnhancedTerminalView.handleSend END ===");
   }, [sendInput]);
 
   // Focus terminal when clicking on it
