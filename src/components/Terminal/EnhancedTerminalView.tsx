@@ -296,7 +296,9 @@ function MessageCopyOverlay() {
     checkMessages();
     const interval = setInterval(checkMessages, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
   if (!showOverlay || messages.length === 0) return null;
@@ -334,10 +336,6 @@ export function EnhancedTerminalView() {
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
   const terminalContainerRef = useRef<HTMLDivElement>(null);
-
-  const [isInputFocused, setIsInputFocused] = useState(false);
-  const [messages, setMessages] = useState<any[]>([]);
-  const terminalContainerRef = useRef<HTMLDivElement>(null);
   const model = useTerminalStore((s) => s.model);
 
   // Handle sending input
@@ -346,12 +344,23 @@ export function EnhancedTerminalView() {
     
     try {
       // Execute command through CLI service
-      await CLIService.executeCommand(input, model);
+      const result = await CLIService.executeCommand(input, model);
+      
+      // If command failed, show error in the enhanced editor
+      if (!result.success) {
+        // You could add a toast notification or other UI feedback here
+        console.error('Command failed:', result.output);
+      }
       
       // Invalidate message cache since terminal content changed
       messageService.invalidateCache();
     } catch (error) {
       console.error('Failed to execute command:', error);
+      // Display error in terminal through CLIService
+      const term = terminalManager.term;
+      if (term) {
+        term.write(`\r\n❌ Error: Failed to execute command\r\n`);
+      }
     }
   }, [model]);
 
@@ -369,7 +378,9 @@ export function EnhancedTerminalView() {
       setMessages(messageService.getAllMessages(true));
     }, 500);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
   return (
