@@ -105,7 +105,22 @@ export function usePty() {
   );
 
   const write = useCallback((data: string) => {
-    ptyRef.current?.write(data);
+    console.log("=== usePty.write called ===");
+    console.log("Data to write:", JSON.stringify(data));
+    console.log("PTY instance available:", !!ptyRef.current);
+    
+    if (!ptyRef.current) {
+      console.error("No PTY instance available to write to");
+      return;
+    }
+    
+    try {
+      console.log("Writing to PTY:", JSON.stringify(data));
+      ptyRef.current.write(data);
+      console.log("PTY write successful");
+    } catch (error) {
+      console.error("Error writing to PTY:", error);
+    }
   }, []);
 
   const resize = useCallback((cols: number, rows: number) => {

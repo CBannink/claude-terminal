@@ -14,6 +14,7 @@ interface TerminalState {
   inputMode: "terminal" | "editor";
   editorBuffer: string;
   editorOpen: boolean;
+  isEnhancedMode: boolean;
 
   setStatus: (status: SessionStatus) => void;
   setClaudePath: (path: string | null) => void;
@@ -27,6 +28,7 @@ interface TerminalState {
   setInputMode: (mode: "terminal" | "editor") => void;
   setEditorBuffer: (content: string) => void;
   setEditorOpen: (open: boolean) => void;
+  setIsEnhancedMode: (enhanced: boolean) => void;
   clearEditorBuffer: () => void;
   reset: () => void;
 }
@@ -44,6 +46,7 @@ export const useTerminalStore = create<TerminalState>((set) => ({
   inputMode: "terminal",
   editorBuffer: "",
   editorOpen: false,
+  isEnhancedMode: false,
 
   setStatus: (status) => set({ status }),
   setClaudePath: (claudePath) => set({ claudePath }),
@@ -54,13 +57,18 @@ export const useTerminalStore = create<TerminalState>((set) => ({
   setSearchOpen: (searchOpen) => set({ searchOpen }),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   setSessionPickerOpen: (sessionPickerOpen) => set({ sessionPickerOpen }),
-  setInputMode: (inputMode) => set({ inputMode }),
+  setInputMode: (inputMode) => {
+    console.log("=== TerminalStore.setInputMode called ===");
+    console.log("New input mode:", inputMode);
+    set({ inputMode });
+  },
   setEditorBuffer: (editorBuffer) => set({ editorBuffer }),
   setEditorOpen: (editorOpen) =>
     set({
       editorOpen,
       inputMode: editorOpen ? "editor" : "terminal",
     }),
+  setIsEnhancedMode: (isEnhancedMode) => set({ isEnhancedMode }),
   clearEditorBuffer: () => set({ editorBuffer: "" }),
   reset: () =>
     set({

@@ -337,30 +337,55 @@ export function EnhancedTerminalView() {
   
   // Handle sending input
   const handleSend = useCallback((input: string) => {
-    if (input.trim()) {
-      // Get the PTY instance directly
-      const pty = usePty();
-      
-      // Temporarily switch to terminal mode to allow input to be processed
-      const originalInputMode = useTerminalStore.getState().inputMode;
-      useTerminalStore.getState().setInputMode("terminal");
-      
-      try {
-        if (pty && pty.write) {
-          // Write directly to PTY (bypasses terminal onData handler)
-          pty.write(input + "\r");
-        } else {
-          // Fallback: try the normal sendInput method
-          sendInput(input + "\r");
-        }
-      } finally {
-        // Restore the original input mode
-        useTerminalStore.getState().setInputMode(originalInputMode);
-      }
-
-      // Invalidate message cache since terminal content changed
-      messageService.invalidateCache();
+    console.log("=== EnhancedTerminalView.handleSend START ===");
+    console.log("Input to send:", input);
+    
+    if (!input.trim()) {
+      console.log("Input is empty or whitespace only, skipping");
+      return;
     }
+    
+    // Get the PTY instance directly
+    const pty = usePty();
+    console.log("PTY instance:", pty);
+    console.log("PTY write method available:", !!pty?.write);
+    
+    // Get current terminal state
+    const term = terminalManager.term;
+    console.log("Terminal instance:", term);
+    
+    // Get current input mode
+    const originalInputMode = useTerminalStore.getState().inputMode;
+    console.log("Original input mode:", originalInputMode);
+    
+    // Temporarily switch to terminal mode to allow input to be processed
+    console.log("Switching to terminal mode for input processing");
+    useTerminalStore.getState().setInputMode("terminal");
+    
+    try {
+      if (pty && pty.write) {
+        console.log("Writing directly to PTY:", input + "\\r");
+        pty.write(input + "\r");
+        console.log("PTY write completed");
+      } else {
+        console.log("PTY write not available, using fallback sendInput");
+        console.log("Calling sendInput with:", input + "\\r");
+        sendInput(input + "\r");
+        console.log("sendInput completed");
+      }
+    } catch (error) {
+      console.error("Error sending input:", error);
+    } finally {
+      // Restore the original input mode
+      console.log("Restoring input mode to:", originalInputMode);
+      useTerminalStore.getState().setInputMode(originalInputMode);
+      console.log("Input mode restored");
+    }
+
+    // Invalidate message cache since terminal content changed
+    console.log("Invalidating message cache");
+    messageService.invalidateCache();
+    console.log("=== EnhancedTerminalView.handleSend END ===");
   }, [sendInput]);
 
   // Focus terminal when clicking on it

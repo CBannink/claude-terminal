@@ -20,8 +20,12 @@ class TerminalManager {
     if (this.term) return this.term;
 
     log("info", "TerminalManager.init: creating terminal instance");
+    console.log("=== TerminalManager.init called ===");
+    console.log("Container:", container);
+    console.log("Settings:", settings);
 
     const theme = themes[settings.theme] || themes.dark;
+    console.log("Using theme:", theme);
 
     const term = new Terminal({
       theme: getXtermTheme(theme),
@@ -33,6 +37,29 @@ class TerminalManager {
       allowProposedApi: true,
       convertEol: false,
       windowsMode: false,
+      scrollOnUserInput: true,
+    });
+    
+    // Add logging for terminal events
+    term.onData((data) => {
+      console.log("=== Terminal.onData event ===");
+      console.log("Data received:", JSON.stringify(data));
+      const { inputMode } = useTerminalStore.getState();
+      console.log("Current input mode:", inputMode);
+    });
+    
+    term.onWrite((data) => {
+      console.log("=== Terminal.onWrite event ===");
+      console.log("Data written:", JSON.stringify(data));
+    });
+    
+    term.onLineFeed(() => {
+      console.log("=== Terminal.onLineFeed event ===");
+    });
+    
+    term.onResize(({ cols, rows }) => {
+      console.log("=== Terminal.onResize event ===");
+      console.log("New dimensions:", cols, "x", rows);
     });
 
     const fitAddon = new FitAddon();

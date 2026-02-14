@@ -109,7 +109,11 @@ export function useClaudeProcess() {
   }, [cleanup, setStatus]);
 
   const sendInput = useCallback((text: string) => {
+    console.log("=== useClaudeProcess.sendInput called ===");
+    console.log("Text to send:", JSON.stringify(text));
+    console.log("Calling write with:", JSON.stringify(text));
     write(text);
+    console.log("sendInput completed");
   }, [write]);
 
   return {
