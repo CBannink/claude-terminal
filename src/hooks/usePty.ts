@@ -4,7 +4,6 @@ import type { Terminal } from "@xterm/xterm";
 import { CLAUDE_ENV } from "../lib/constants";
 import { log } from "../lib/logger";
 import { useTerminalStore } from "../stores/terminalStore";
-import { useInputProcessor } from "./useInputProcessor";
 
 interface PtyInstance {
   write: (data: string) => void;
@@ -33,8 +32,6 @@ export function usePty() {
       ptyRef.current = null;
     }
   }, []);
-
-  const { processInput } = useInputProcessor();
 
   const spawnProcess = useCallback(
     (
@@ -82,8 +79,11 @@ export function usePty() {
       // Switching modes while typing is safe because Zustand updates are synchronous,
       // but UI should only allow mode switching when terminal is idle for best UX.
       const inputDisposable = term.onData((data: string) => {
-        // Process all terminal input through the input processor
-        processInput(data, 'terminal');
+        const { inputMode } = useTerminalStore.getState();
+        if (inputMode === "terminal") {
+          pty.write(data);
+        }
+        // In editor mode: terminal input is suppressed
       });
       disposablesRef.current.push(inputDisposable);
 
@@ -101,7 +101,7 @@ export function usePty() {
 
       return pty;
     },
-    [cleanup, processInput]
+    [cleanup]
   );
 
   const write = useCallback((data: string) => {
