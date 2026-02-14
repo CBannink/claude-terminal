@@ -6,10 +6,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { TerminalView } from "./TerminalView";
 import { useClaudeProcess } from "../../hooks/useClaudeProcess";
+import { usePty } from "../../hooks/usePty";
 import { terminalManager } from "../../lib/terminal-manager";
 import { messageService } from "../../lib/message-service";
 import { Send, Copy, Trash } from "lucide-react";
 import { TerminalOverlay } from "./TerminalOverlay";
+import { useTerminalStore } from "../../stores/terminalStore";
 
 /**
  * Enhanced Terminal Input Props
@@ -197,14 +199,16 @@ function EnhancedTerminalInput({ onSend, onFocus, onBlur }: EnhancedTerminalInpu
                       min-h-[24px] max-h-[200px] py-1 
                       terminal-input-enhancement"
             
-            style={{
-              lineHeight: '1.4',
-              fontFamily: 'inherit',
-              fontSize: 'inherit',
-              // Terminal-like cursor
-              caretColor: '#4dabf7',
-              caretShape: 'block'
-            }}
+            style={
+              {
+                lineHeight: '1.4',
+                fontFamily: 'inherit',
+                fontSize: 'inherit',
+                // Terminal-like cursor
+                caretColor: '#4dabf7',
+                caretShape: 'block'
+              }
+            }
           />
         </div>
         
@@ -279,7 +283,7 @@ function EnhancedTerminalInput({ onSend, onFocus, onBlur }: EnhancedTerminalInpu
 function MessageCopyOverlay() {
   const [showOverlay, setShowOverlay] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
-  
+
   // Check for messages periodically
   useEffect(() => {
     const checkMessages = () => {
@@ -287,15 +291,15 @@ function MessageCopyOverlay() {
       setMessages(allMessages);
       setShowOverlay(allMessages.length > 0);
     };
-    
+
     checkMessages();
     const interval = setInterval(checkMessages, 1000);
-    
+
     return () => clearInterval(interval);
   }, []);
-  
+
   if (!showOverlay || messages.length === 0) return null;
-  
+
   return (
     <div className="absolute bottom-20 left-4 right-4 pointer-events-none">
       <div className="flex justify-end">
@@ -339,15 +343,35 @@ export function EnhancedTerminalView() {
       if (term) {
         term.write(`\r\n👤 You: ${input}\r\n`);
       }
+
+      // Get the PTY instance directly to bypass terminal input blocking
+      const pty = usePty();
+      console.log("Sending message:", input, "PTY available:", !!pty?.write);
       
-      // Send to Claude
-      sendInput(input + "\r");
+      // Temporarily switch to terminal mode to allow input to be processed
+      const originalInputMode = useTerminalStore.getState().inputMode;
+      useTerminalStore.getState().setInputMode("terminal");
       
+      try {
+        if (pty && pty.write) {
+          // Write directly to PTY (bypasses terminal onData handler)
+          console.log("Writing to PTY directly");
+          pty.write(input + "\r");
+        } else {
+          // Fallback: try the normal sendInput method
+          console.log("Using fallback sendInput");
+          sendInput(input + "\r");
+        }
+      } finally {
+        // Restore the original input mode
+        useTerminalStore.getState().setInputMode(originalInputMode);
+      }
+
       // Invalidate message cache since terminal content changed
       messageService.invalidateCache();
     }
   }, [sendInput]);
-  
+
   // Focus terminal when clicking on it
   const handleTerminalClick = useCallback(() => {
     if (!isInputFocused) {
@@ -355,16 +379,16 @@ export function EnhancedTerminalView() {
       term?.focus();
     }
   }, [isInputFocused]);
-  
+
   // Refresh messages periodically for overlay
   useEffect(() => {
     const interval = setInterval(() => {
       setMessages(messageService.getAllMessages(true));
     }, 500);
-    
+
     return () => clearInterval(interval);
   }, []);
-  
+
   return (
     <div className="flex flex-col h-full relative" ref={terminalContainerRef}>
       {/* Terminal display area (read-only) */}
