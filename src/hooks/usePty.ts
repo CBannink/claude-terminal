@@ -79,14 +79,11 @@ export function usePty() {
       // Switching modes while typing is safe because Zustand updates are synchronous,
       // but UI should only allow mode switching when terminal is idle for best UX.
       const inputDisposable = term.onData((data: string) => {
-        const { inputMode, isEnhancedMode, editorOpen } = useTerminalStore.getState();
-        
-        // In enhanced mode, we handle input through the enhanced editor
-        // but we still need to allow programmatic input (like from handleSend)
-        // We check editorOpen instead of isEnhancedMode to allow input when editor is closed
-        if (inputMode === "terminal" || !editorOpen) {
+        const { inputMode } = useTerminalStore.getState();
+        if (inputMode === "terminal") {
           pty.write(data);
         }
+        // In editor mode: terminal input is suppressed
       });
       disposablesRef.current.push(inputDisposable);
 

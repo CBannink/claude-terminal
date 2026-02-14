@@ -339,32 +339,25 @@ export function EnhancedTerminalView() {
   const handleSend = useCallback((input: string) => {
     if (!input.trim()) return;
     
-    // Get the terminal instance
-    const term = terminalManager.term;
-    
-    // Focus the terminal to ensure it's ready to receive input
-    if (term) {
-      term.focus();
-    }
-    
     // Get the PTY instance directly
     const pty = usePty();
     
-    // Temporarily set editorOpen to false to allow input to be processed
-    const originalEditorOpen = useTerminalStore.getState().editorOpen;
-    useTerminalStore.getState().setEditorOpen(false);
+    // Get the terminal instance to display the input
+    const term = terminalManager.term;
     
-    try {
-      // Write directly to the PTY if available
-      if (pty && pty.write) {
-        pty.write(input + "\r");
-      } else {
-        // Fallback: try the normal sendInput method
-        sendInput(input + "\r");
-      }
-    } finally {
-      // Restore the original editorOpen state
-      useTerminalStore.getState().setEditorOpen(originalEditorOpen);
+    // Display the input in the terminal for visual feedback
+    if (term) {
+      term.write(`\r\n👤 You: ${input}\r\n`);
+    }
+    
+    // Directly write to the PTY process
+    // This bypasses the terminal's input mode check
+    if (pty && pty.write) {
+      // Add a newline to ensure the command is executed
+      pty.write(input + "\r");
+    } else {
+      // Fallback: try the normal sendInput method
+      sendInput(input + "\r");
     }
 
     // Invalidate message cache since terminal content changed
